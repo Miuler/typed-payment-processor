@@ -1,8 +1,8 @@
 package io.bernhardt.typedpayment
 
-import akka.actor.typed.{ActorRef, SupervisorStrategy}
+import akka.actor.typed.{ ActorRef, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.typed.{ClusterSingleton, SingletonActor}
+import akka.cluster.typed.{ ClusterSingleton, SingletonActor }
 
 import scala.concurrent.duration._
 
@@ -36,13 +36,10 @@ object PaymentProcessor {
       context.log.info("Typed Payment Processor started")
 
       val configuration: ActorRef[Configuration.ConfigurationRequest] =
-        ClusterSingleton(context.system).init(SingletonActor(
-          Configuration(), "config"
-        ))
+        ClusterSingleton(context.system).init(SingletonActor(Configuration(), "config"))
 
-      val creditCardStorage = ClusterSingleton(context.system).init(SingletonActor(
-        CreditCardStorage(), "credit-card-storage"
-      ))
+      val creditCardStorage =
+        ClusterSingleton(context.system).init(SingletonActor(CreditCardStorage(), "credit-card-storage"))
 
       val supervisedCreditCardProcessor = Behaviors
         .supervise(CreditCardProcessor(creditCardStorage))
@@ -53,7 +50,7 @@ object PaymentProcessor {
         context.spawn(supervisedCreditCardProcessor, s"creditCardProcessor-$i")
       }
 
-      context.spawn(PaymentHandling(configuration),"handling")
+      context.spawn(PaymentHandling(configuration), "handling")
 
       Behaviors.empty
     }

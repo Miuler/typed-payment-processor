@@ -1,10 +1,10 @@
 package io.bernhardt.typedpayment
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior}
-import akka.persistence.typed.{PersistenceId, RecoveryCompleted}
-import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
-import io.bernhardt.typedpayment.Configuration.{CreditCard, MerchantId, OrderId, TransactionId, UserId}
+import akka.actor.typed.{ ActorRef, Behavior }
+import akka.persistence.typed.{ PersistenceId, RecoveryCompleted }
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
+import io.bernhardt.typedpayment.Configuration.{ CreditCard, MerchantId, OrderId, TransactionId, UserId }
 import squants.market.Money
 
 /**
@@ -12,10 +12,10 @@ import squants.market.Money
  */
 object PaymentRequestHandler {
   def apply(
-             orderId: OrderId,
-             persistenceId: PersistenceId,
-             configuration: ActorRef[Configuration.ConfigurationRequest],
-             creditCardProcessorRouter: ActorRef[Processor.ProcessorRequest]): Behavior[Command] = Behaviors.setup { context =>
+      orderId: OrderId,
+      persistenceId: PersistenceId,
+      configuration: ActorRef[Configuration.ConfigurationRequest],
+      creditCardProcessorRouter: ActorRef[Processor.ProcessorRequest]): Behavior[Command] = Behaviors.setup { context =>
     val configurationAdapter: ActorRef[Configuration.ConfigurationResponse] = context.messageAdapter { response =>
       AdaptedConfigurationResponse(orderId, response)
     }
@@ -94,18 +94,18 @@ object PaymentRequestHandler {
     def processRequest(config: Configuration.ConfigurationFound, amount: Money): Effect[Event, State] = {
       config.userConfiguration.paymentMethod match {
         case cc: CreditCard =>
-            Effect.none.thenRun { _ =>
-              creditCardProcessorRouter ! Processor.Process(amount, config.merchantConfiguration, config.userId, cc, processingAdapter)
-            }
+          Effect.none.thenRun { _ =>
+            creditCardProcessorRouter ! Processor
+              .Process(amount, config.merchantConfiguration, config.userId, cc, processingAdapter)
           }
+      }
     }
 
     EventSourcedBehavior[Command, Event, State](
       persistenceId = persistenceId,
       emptyState = Empty,
       commandHandler = commandHandler,
-      eventHandler = eventHandler
-    ).receiveSignal {
+      eventHandler = eventHandler).receiveSignal {
       case (state: ProcessingPayment, RecoveryCompleted) =>
         // request configuration again
         configuration ! Configuration.RetrieveConfiguration(state.merchantId, state.userId, configurationAdapter)

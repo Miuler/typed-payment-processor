@@ -1,11 +1,11 @@
 package io.bernhardt.typedpayment
 
 import akka.actor.typed.scaladsl._
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.cluster.sharding.typed.HashCodeNoEnvelopeMessageExtractor
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, Entity, EntityTypeKey }
 import akka.persistence.typed.PersistenceId
-import io.bernhardt.typedpayment.Configuration.{ConfigurationRequest, MerchantId, OrderId, UserId}
+import io.bernhardt.typedpayment.Configuration.{ ConfigurationRequest, MerchantId, OrderId, UserId }
 import squants.market.Money
 
 /**
@@ -26,10 +26,7 @@ object PaymentHandling {
         }
 
       // initialize the group router for credit card processors
-      val creditCardProcessorRouter = context.spawn(
-        Routers.group(CreditCardProcessor.Key),
-        "creditCardProcessors"
-      )
+      val creditCardProcessorRouter = context.spawn(Routers.group(CreditCardProcessor.Key), "creditCardProcessors")
 
       // initialize the shard region
       val shardRegion: ActorRef[PaymentRequestHandler.Command] =
@@ -46,18 +43,17 @@ object PaymentHandling {
             // which doesn't allow the actor to flush all messages in flight to the journal
             .withStopMessage(PaymentRequestHandler.GracefulStop))
 
-          Behaviors.receiveMessage {
-            case paymentRequest: HandlePayment =>
-              shardRegion ! PaymentRequestHandler.HandlePaymentRequest(
-                paymentRequest.orderId,
-                paymentRequest.amount,
-                paymentRequest.merchantId,
-                paymentRequest.userId,
-                paymentRequest.sender)
-              Behaviors.same
-            case _ => Behaviors.unhandled
-          }
-
+      Behaviors.receiveMessage {
+        case paymentRequest: HandlePayment =>
+          shardRegion ! PaymentRequestHandler.HandlePaymentRequest(
+            paymentRequest.orderId,
+            paymentRequest.amount,
+            paymentRequest.merchantId,
+            paymentRequest.userId,
+            paymentRequest.sender)
+          Behaviors.same
+        case _ => Behaviors.unhandled
+      }
     }
 
   // ~~~ public protocol
